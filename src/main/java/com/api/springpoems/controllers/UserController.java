@@ -1,7 +1,5 @@
 package com.api.springpoems.controllers;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +29,6 @@ import com.api.springpoems.entities.User;
 import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.infra.security.TokenDataJWT;
 import com.api.springpoems.infra.security.TokenService;
-import com.api.springpoems.infra.validation.register.RegisterValidator;
 import com.api.springpoems.repositories.UserRepository;
 import com.api.springpoems.services.UserService;
 
@@ -57,9 +54,6 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private List<RegisterValidator> registerValidators;
-
     private void passwordConfirmation(String password, String passwordConfirm) {
         if (!password.equals(passwordConfirm)) {
             throw new ValidationException("The password and the it's confirmation do not match.");
@@ -67,6 +61,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
+    @Transactional
     public ResponseEntity register(@ModelAttribute @RequestBody @Valid RegisterUserData data) {
         if (repository.findByUsername(data.username()) != null) {
             throw new IllegalArgumentException("Username already exists!");
@@ -82,6 +77,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
+    @Transactional
     public ResponseEntity login(@ModelAttribute @RequestBody @Valid LoginData data) {
         var authenticationToken = new UsernamePasswordAuthenticationToken(data.username(), data.password());
         var authentication = manager.authenticate(authenticationToken);

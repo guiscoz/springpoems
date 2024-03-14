@@ -10,5 +10,5 @@ import com.api.springpoems.entities.User;
 public interface UserRepository extends JpaRepository<User, Long> {
     UserDetails findByUsername (String username);
     User findByUsernameAndActiveTrue (String username);
-    Page<User> findAllByActiveTrue(Pageable paginacao);
+    Page<User> findAllByActiveTrue(Pageable pageable);
 }

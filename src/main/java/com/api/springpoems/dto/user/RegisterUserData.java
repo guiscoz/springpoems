@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterUserData(
     @NotBlank(message ="The username cannot be empty")
+    @Pattern(regexp = "^\\S+$", message = "The username cannot contain spaces.")
     String username,
     
     @NotBlank(message ="The email cannot be empty")
