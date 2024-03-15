@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ import com.api.springpoems.entities.User;
 import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.infra.security.TokenDataJWT;
 import com.api.springpoems.infra.security.TokenService;
+import com.api.springpoems.infra.validation.UserValidator;
 import com.api.springpoems.repositories.UserRepository;
 import com.api.springpoems.services.UserService;
 
@@ -53,6 +55,9 @@ public class UserController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserValidator validator;
 
     private void passwordConfirmation(String password, String passwordConfirm) {
         if (!password.equals(passwordConfirm)) {
@@ -82,6 +87,9 @@ public class UserController {
         var authenticationToken = new UsernamePasswordAuthenticationToken(data.username(), data.password());
         var authentication = manager.authenticate(authenticationToken);
 
+        User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
+
         var tokenJWT = tokenService.generateToken((User) authentication.getPrincipal());
 
         return ResponseEntity.ok(new TokenDataJWT(tokenJWT));
@@ -91,6 +99,7 @@ public class UserController {
     public ResponseEntity yourProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
 
         ShowProfileData showProfileData = new ShowProfileData(
             user.getUsername(),
@@ -112,6 +121,7 @@ public class UserController {
     public ResponseEntity changePassword(@ModelAttribute @RequestBody @Valid ChangePasswordData data) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
 
         if (!passwordEncoder.matches(data.currentPassword(), user.getPassword())) {
             throw new ValidationException("The current password is incorrect");
@@ -130,6 +140,7 @@ public class UserController {
     public ResponseEntity changeEmail(@ModelAttribute @RequestBody @Valid ChangeEmailData data) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
 
         if(data.email().equals(user.getEmail())) {
             throw new ValidationException("You're already using this email.");
@@ -146,23 +157,13 @@ public class UserController {
     public ResponseEntity updateProfile(@ModelAttribute @RequestBody @Valid UpdateProfileData data) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
 
         user.updateProfile(data);
         repository.save(user);
         
         return ResponseEntity.ok(new ShowProfileData(user));
     }
-
-    // @DeleteMapping("/profile/delete")
-    // @Transactional
-    // public ResponseEntity deleteUser() {
-    //     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    //     User user = (User) authentication.getPrincipal();
-    //     user.setActive(false);
-    //     repository.save(user);
-        
-    //     return ResponseEntity.ok("User removed successfully!");
-    // }
 
     @GetMapping("/{username}")
     public ResponseEntity anotherProfile(@PathVariable String username) {
@@ -186,5 +187,16 @@ public class UserController {
     public ResponseEntity<Page<ShowProfileData>> userList(@PageableDefault(size=10, sort = {"username"}) Pageable pagination) {
         var page = repository.findAllByActiveTrue(pagination).map(ShowProfileData::new);
         return ResponseEntity.ok(page);
+    }
+
+    @DeleteMapping("/profile/delete")
+    @Transactional
+    public ResponseEntity deleteUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+        validator.checkActiveUser(user);
+        userService.deleteUser(user);
+        
+        return ResponseEntity.ok("User removed successfully!");
     }
 }

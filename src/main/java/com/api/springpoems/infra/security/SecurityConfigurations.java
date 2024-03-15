@@ -31,8 +31,10 @@ public class SecurityConfigurations {
                 req.requestMatchers(HttpMethod.POST, "/register").permitAll();
                 req.requestMatchers(HttpMethod.GET, "/{username}").permitAll();
                 req.requestMatchers(HttpMethod.GET, "/user-list").permitAll();
-                req.requestMatchers(HttpMethod.GET, "/{username}/poem/{id}").permitAll();
+                req.requestMatchers(HttpMethod.GET, "/poem/{id}").permitAll();
                 req.requestMatchers(HttpMethod.GET, "/{username}/poems").permitAll();
+                req.requestMatchers(HttpMethod.GET, "/comments/{commentId}").permitAll();
+                req.requestMatchers(HttpMethod.GET, "/poems/{id}/comments").permitAll();
                 req.anyRequest().authenticated();
             })
             .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

@@ -1,13 +1,13 @@
 package com.api.springpoems.dto.poem;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.api.springpoems.entities.Poem;
 
 public record ListAuthorPoemsData(
     String title,
-    LocalDate createdAt,
-    LocalDate lastUpdate
+    LocalDateTime createdAt,
+    LocalDateTime lastUpdate
 ) {
     public ListAuthorPoemsData(Poem poem) {
         this(

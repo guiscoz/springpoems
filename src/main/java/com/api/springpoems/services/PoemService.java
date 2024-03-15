@@ -1,5 +1,7 @@
 package com.api.springpoems.services;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,8 +11,10 @@ import com.api.springpoems.dto.poem.CreatePoemData;
 import com.api.springpoems.dto.poem.ListAuthorPoemsData;
 import com.api.springpoems.dto.poem.SendPoemData;
 import com.api.springpoems.dto.poem.ShowPoemData;
+import com.api.springpoems.entities.Comment;
 import com.api.springpoems.entities.Poem;
 import com.api.springpoems.entities.User;
+import com.api.springpoems.repositories.CommentRepository;
 import com.api.springpoems.repositories.PoemRepository;
 import com.api.springpoems.repositories.UserRepository;
 
@@ -21,6 +25,9 @@ public class PoemService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     public ShowPoemData getPoem(Long id) {
         Poem poem = poemRepository.findByIdAndActiveTrue(id);
@@ -41,8 +48,20 @@ public class PoemService {
     }
 
     public void update(User author, Long id, SendPoemData data) {
-        Poem poem = poemRepository.findByIdAndAuthor(id, author);
+        Poem poem = poemRepository.findByIdAndAuthorAndActiveTrue(id, author);
         poem.updatePoem(data);
         poemRepository.save(poem);
+    }
+
+    public void delete(Long id, User author) {
+        Poem poem = poemRepository.findByIdAndAuthorAndActiveTrue(id, author);
+        poem.setActive(false);
+        poemRepository.save(poem);
+
+        List<Comment> comments = commentRepository.findAllByPoemAndActiveTrue(poem);
+        for (Comment comment : comments) {
+            comment.setActive(false);
+        }
+        commentRepository.saveAll(comments);
     }
 }

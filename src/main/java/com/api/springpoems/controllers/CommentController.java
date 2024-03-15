@@ -15,65 +15,67 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.api.springpoems.dto.poem.SendPoemData;
-import com.api.springpoems.dto.poem.ShowPoemData;
+import com.api.springpoems.dto.comment.SendCommentData;
+import com.api.springpoems.dto.comment.ShowCommentData;
 import com.api.springpoems.entities.User;
-import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.infra.validation.UserValidator;
-import com.api.springpoems.services.PoemService;
+import com.api.springpoems.services.CommentService;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-
 @RestController
-public class PoemController {
+public class CommentController {
     @Autowired
-    PoemService service;
+    CommentService service;
 
     @Autowired
     private UserValidator validator;
     
-    @GetMapping("/poem/{id}") 
-    public ResponseEntity getPoem(@PathVariable Long id) {
-        ShowPoemData poem = service.getPoem(id);
-        return ResponseEntity.ok(poem);
+    @GetMapping("/comments/{id}") 
+    public ResponseEntity getPoem(
+        @PathVariable Long id
+    ) {
+        ShowCommentData comment = service.getComment(id);
+        return ResponseEntity.ok(comment);
     }
 
-    @GetMapping("/{username}/poems") 
-    public ResponseEntity userPoems(@PathVariable String username, @PageableDefault(size=10, sort = {"title"}) Pageable pagination) {
-        var page = service.getAuthorPoems(username, pagination);
+    @GetMapping("/poems/{id}/comments") 
+    public ResponseEntity poemComments(
+        @PathVariable Long id,  
+        @PageableDefault(size=10, sort = {"lastUpdate"}) Pageable pagination
+    ) {
+        var page = service.getPoemComments(id, pagination);
         return ResponseEntity.ok(page);
     }
 
-    @GetMapping("/profile/poems") 
-    public ResponseEntity yourPoems(@PageableDefault(size=10, sort = {"title"}) Pageable pagination) {
+    @GetMapping("/profile/comments") 
+    public ResponseEntity userComments(@PageableDefault(size=10, sort = {"lastUpdate"}) Pageable pagination) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
-        var page = service.getAuthorPoems(user.getUsername(), pagination);
+        var page = service.getUserComments(user, pagination);
         return ResponseEntity.ok(page);
     }
 
-    @PostMapping("/profile/new_poem")
+    @PostMapping("/poems/{id}/new_comment")
     @Transactional
-    public ResponseEntity create(@ModelAttribute @RequestBody @Valid SendPoemData data) {
-        if(data.title().isEmpty() || data.content().isEmpty()) {
-            throw new ValidationException("Your poem needs content and a title.");
-        }
-
+    public ResponseEntity create(
+        @ModelAttribute @RequestBody @Valid SendCommentData data,
+        @PathVariable Long id
+    ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
-        service.create(data, user);
+        service.create(data, user, id);
         return ResponseEntity.ok(data);
     }
 
-    @PutMapping("/profile/update_poem/{id}")
+    @PutMapping("/comments/{id}")
     @Transactional
-    public ResponseEntity update(@ModelAttribute @RequestBody @Valid SendPoemData data, @PathVariable Long id) {
+    public ResponseEntity update(@ModelAttribute @RequestBody @Valid SendCommentData data, @PathVariable Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
@@ -82,13 +84,13 @@ public class PoemController {
         return ResponseEntity.ok(data);
     }
 
-    @DeleteMapping("/poem/{id}")
-    public ResponseEntity deletePoem(@PathVariable Long id) {
+    @DeleteMapping("/comments/{id}")
+    public ResponseEntity deleteComment(@PathVariable Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
         service.delete(id, user);
-        return ResponseEntity.ok("Poem removed successfully");
+        return ResponseEntity.ok("Comment removed successfully");
     }
 }

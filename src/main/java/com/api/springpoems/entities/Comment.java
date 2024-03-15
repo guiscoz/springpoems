@@ -2,8 +2,8 @@ package com.api.springpoems.entities;
 
 import java.time.LocalDateTime;
 
-import com.api.springpoems.dto.poem.CreatePoemData;
-import com.api.springpoems.dto.poem.SendPoemData;
+import com.api.springpoems.dto.comment.CreateCommentData;
+import com.api.springpoems.dto.comment.SendCommentData;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -20,19 +20,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Table(name = "poems")
-@Entity(name = "Poem")
+@Table(name = "comments")
+@Entity(name = "Comment")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-public class Poem {
+public class Comment {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
+
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime lastUpdate;
@@ -41,22 +41,22 @@ public class Poem {
     @JoinColumn(name = "author_id")
     private User author;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "poem_id")
+    private Poem poem;
+
     private Boolean active;
 
-    public Poem(CreatePoemData data) {
-        this.title = data.title();
+    public Comment(@Valid CreateCommentData data) {
         this.content = data.content();
+        this.author = data.author();
+        this.poem = data.poem();
         this.createdAt = LocalDateTime.now();
         this.lastUpdate = LocalDateTime.now();
-        this.author = data.author();
         this.active = true;
     }
 
-    public void updatePoem(@Valid SendPoemData data) {
-        if(data.title() != null) {
-            this.title = data.title();
-        }
-
+    public void updateComment(@Valid SendCommentData data) {
         if(data.content() != null) {
             this.content = data.content();
         }
