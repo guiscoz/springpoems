@@ -37,8 +37,6 @@ import com.api.springpoems.services.UserService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-
-
 @RestController
 public class UserController {
     @Autowired
