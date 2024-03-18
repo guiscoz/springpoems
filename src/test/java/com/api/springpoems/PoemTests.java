@@ -67,24 +67,22 @@ public class PoemTests {
 
     @Test
     public void testListPoem() {
-        // Mock Objects
-        User mockUser = new User(1L, "userTest", "password", "email@email.com", LocalDate.now(), null, null, null, null, null, true);
-        Poem mockPoem1 = new Poem(1L, "poemTitle1", "poemContent1", LocalDateTime.now(), LocalDateTime.now(), mockUser, true);
-        Poem mockPoem2 = new Poem(2L, "poemTitle2", "poemContent2", LocalDateTime.now(), LocalDateTime.now(), mockUser, true);
+        User mockAuthor = new User(1L, "userTest", "password", "email@email.com", LocalDate.now(), null, null, null, null, null, true);
+        Poem mockPoem1 = new Poem(1L, "poemTitle1", "poemContent1", LocalDateTime.now(), LocalDateTime.now(), mockAuthor, true);
+        Poem mockPoem2 = new Poem(2L, "poemTitle2", "poemContent2", LocalDateTime.now(), LocalDateTime.now(), mockAuthor, true);
         List<Poem> poems = List.of(mockPoem1, mockPoem2);
 
-        // Mock Pageable Behavior
         Mockito.when(mockPageable.getPageSize()).thenReturn(10);
-        Mockito.when(mockPageable.getSort()).thenReturn(Sort.by("title").ascending()); // Sort by title ascending
+        Mockito.when(mockPageable.getSort()).thenReturn(Sort.by("title").ascending());
 
-        // Configure the mock poemRepository
-        Mockito.when(poemRepository.findAllByAuthorAndActiveTrue(Mockito.isNull(), Mockito.any(Pageable.class)))
-            .thenReturn(new PageImpl<>(poems));
+        Mockito.when(userRepository.findByUsernameAndActiveTrue(mockAuthor.getUsername())).thenReturn(mockAuthor);
+        Mockito.when(
+            poemRepository.findAllByAuthorAndActiveTrue(mockAuthor, mockPageable)
+        ).thenReturn(new PageImpl<>(poems));
 
-        // Call Service Method
-        Page<ListAuthorPoemsData> response = service.getAuthorPoems(mockUser.getUsername(), mockPageable);
 
-        // Assertions
+        Page<ListAuthorPoemsData> response = service.getAuthorPoems(mockAuthor.getUsername(), mockPageable);
+
         assertNotNull(response, "Response should not be null");
         assertTrue(response.hasContent(), "Response page should have content");
     }

@@ -12,9 +12,9 @@ import com.api.springpoems.dto.comment.ShowCommentData;
 import com.api.springpoems.entities.Comment;
 import com.api.springpoems.entities.Poem;
 import com.api.springpoems.entities.User;
+import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.repositories.CommentRepository;
 import com.api.springpoems.repositories.PoemRepository;
-import com.api.springpoems.repositories.UserRepository;
 
 @Service
 public class CommentService {
@@ -23,9 +23,6 @@ public class CommentService {
 
     @Autowired
     private PoemRepository poemRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     public ShowCommentData getComment(Long id) {
         Comment comment = commentRepository.findByIdAndActiveTrue(id);
@@ -58,8 +55,15 @@ public class CommentService {
     }
 
     public void delete(Long id, User author) {
-        Comment comment = commentRepository.findByIdAndAuthorAndActiveTrue(id, author);
-        comment.setActive(false);
-        commentRepository.save(comment);
+        Comment comment = commentRepository.findByIdAndActiveTrue(id);
+        Poem poem = comment.getPoem();
+
+        if(poem.getAuthor().equals(author) || comment.getAuthor().equals(author)) {
+            comment.setActive(false);
+            commentRepository.save(comment);
+        } else {
+            throw new ValidationException("Only the author of the poem or the comment can remove this comment.");
+        }
+        
     }
 }
