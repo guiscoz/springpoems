@@ -64,6 +64,5 @@ public class CommentService {
         } else {
             throw new ValidationException("Only the author of the poem or the comment can remove this comment.");
         }
-        
     }
 }

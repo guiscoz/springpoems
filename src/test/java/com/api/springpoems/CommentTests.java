@@ -25,9 +25,9 @@ import com.api.springpoems.dto.comment.ShowCommentData;
 import com.api.springpoems.entities.Comment;
 import com.api.springpoems.entities.Poem;
 import com.api.springpoems.entities.User;
+import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.repositories.CommentRepository;
 import com.api.springpoems.repositories.PoemRepository;
-import com.api.springpoems.repositories.UserRepository;
 import com.api.springpoems.services.CommentService;
 
 @SpringBootTest
@@ -38,9 +38,6 @@ public class CommentTests {
 
     @Mock
     private PoemRepository poemRepository;
-
-    @Mock
-    private UserRepository userRepository;
 
     @Mock
     private CommentRepository commentRepository;
@@ -152,5 +149,19 @@ public class CommentTests {
         Mockito.verify(commentRepository).save(mockComment);
 
         assertFalse(mockComment.getActive());
+    }
+
+    @Test
+    public void testDeleteCommentUnauthorizedUser() {
+        User unauthorizedUser = new User(2L, "userTest", "password", "email@email.com", LocalDate.now(), null, null, null, null, null, true);
+
+        User authorizedUser = new User(1L, "userTest2", "password", "email@email.com", LocalDate.now(), null, null, null, null, null, true);
+        Poem mockPoem = new Poem(1L, "poemTitle", "poemContent", LocalDateTime.now(), LocalDateTime.now(), authorizedUser, true); 
+
+        Comment mockComment = new Comment(1L, "content", LocalDateTime.now(), LocalDateTime.now(), authorizedUser, mockPoem,true);
+
+        Mockito.when(commentRepository.findByIdAndActiveTrue(1L)).thenReturn(mockComment);
+
+        assertThrows(ValidationException.class, () -> service.delete(1L, unauthorizedUser));
     }
 }

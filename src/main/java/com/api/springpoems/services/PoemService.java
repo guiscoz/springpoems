@@ -14,6 +14,7 @@ import com.api.springpoems.dto.poem.ShowPoemData;
 import com.api.springpoems.entities.Comment;
 import com.api.springpoems.entities.Poem;
 import com.api.springpoems.entities.User;
+import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.repositories.CommentRepository;
 import com.api.springpoems.repositories.PoemRepository;
 import com.api.springpoems.repositories.UserRepository;
@@ -54,14 +55,19 @@ public class PoemService {
     }
 
     public void delete(Long id, User author) {
-        Poem poem = poemRepository.findByIdAndAuthorAndActiveTrue(id, author);
-        poem.setActive(false);
-        poemRepository.save(poem);
+        Poem poem = poemRepository.findByIdAndActiveTrue(id);
 
-        List<Comment> comments = commentRepository.findAllByPoemAndActiveTrue(poem);
-        for (Comment comment : comments) {
-            comment.setActive(false);
+        if(poem.getAuthor().equals(author)) {
+            poem.setActive(false);
+            poemRepository.save(poem);
+
+            List<Comment> comments = commentRepository.findAllByPoemAndActiveTrue(poem);
+            for (Comment comment : comments) {
+                comment.setActive(false);
+            }
+            commentRepository.saveAll(comments);
+        } else {
+            throw new ValidationException("Only the author can remove the poem.");
         }
-        commentRepository.saveAll(comments);
     }
 }

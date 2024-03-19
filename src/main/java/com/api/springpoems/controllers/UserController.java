@@ -9,8 +9,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -27,7 +25,6 @@ import com.api.springpoems.dto.user.RegisterUserData;
 import com.api.springpoems.dto.user.ShowProfileData;
 import com.api.springpoems.dto.user.UpdateProfileData;
 import com.api.springpoems.entities.User;
-import com.api.springpoems.infra.exceptions.ValidationException;
 import com.api.springpoems.infra.security.TokenDataJWT;
 import com.api.springpoems.infra.security.TokenService;
 import com.api.springpoems.infra.validation.UserValidator;
@@ -52,28 +49,12 @@ public class UserController {
     private UserRepository repository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private UserValidator validator;
-
-    private void passwordConfirmation(String password, String passwordConfirm) {
-        if (!password.equals(passwordConfirm)) {
-            throw new ValidationException("The password and the it's confirmation do not match.");
-        }
-    }
 
     @PostMapping("/register")
     @Transactional
     public ResponseEntity register(@ModelAttribute @RequestBody @Valid RegisterUserData data) {
-        if (repository.findByUsername(data.username()) != null) {
-            throw new IllegalArgumentException("Username already exists!");
-        }
-
-        passwordConfirmation(data.password(), data.confirmPassword());
-        var user = new User(data);
-        System.err.println(user);
-        User newUser = userService.registerUser(user);
+        User newUser = userService.registerUser(data);
         String tokenJWT = tokenService.generateToken(newUser);
 
         return ResponseEntity.ok(new TokenDataJWT(tokenJWT));
@@ -94,25 +75,22 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity yourProfile() {
+    public ResponseEntity authenticatedProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
-        ShowProfileData showProfileData = new ShowProfileData(
-            user.getUsername(),
-            user.getEmail(),
-            user.getMemberSince(),
-            user.getGender(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getDescription(),
-            user.getBirthday()
-        );
+        ShowProfileData showProfileData = userService.getProfileData(null, user);
 
         return ResponseEntity.ok(showProfileData);
     }
     
+    @GetMapping("/{username}")
+    public ResponseEntity notAuthenticatedProfile(@PathVariable String username) {
+        ShowProfileData showProfileData = userService.getProfileData(username, null);
+
+        return ResponseEntity.ok(showProfileData);
+    }
 
     @PutMapping("/profile/change_password")
     @Transactional
@@ -121,14 +99,7 @@ public class UserController {
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
-        if (!passwordEncoder.matches(data.currentPassword(), user.getPassword())) {
-            throw new ValidationException("The current password is incorrect");
-        }
-
-        passwordConfirmation(data.newPassword(), data.confirmPassword());
-        String encodedNewPassword = new BCryptPasswordEncoder().encode(data.newPassword());
-        user.setPassword(encodedNewPassword);
-        repository.save(user);
+        userService.changePassword(data, user);
         
         return ResponseEntity.ok("Password changed successfully!");
     }
@@ -140,12 +111,7 @@ public class UserController {
         User user = (User) authentication.getPrincipal();
         validator.checkActiveUser(user);
 
-        if(data.email().equals(user.getEmail())) {
-            throw new ValidationException("You're already using this email.");
-        }
-
-        user.setEmail(data.email());
-        repository.save(user);
+        userService.changeEmail(data, user);
         
         return ResponseEntity.ok("Email changed successfully!");
     }
@@ -163,27 +129,9 @@ public class UserController {
         return ResponseEntity.ok(new ShowProfileData(user));
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity anotherProfile(@PathVariable String username) {
-        User user = repository.findByUsernameAndActiveTrue(username);
-
-        ShowProfileData showProfileData = new ShowProfileData(
-            user.getUsername(),
-            user.getEmail(),
-            user.getMemberSince(),
-            user.getGender(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getDescription(),
-            user.getBirthday()
-        );
-
-        return ResponseEntity.ok(showProfileData);
-    }
-
     @GetMapping("/user-list")
     public ResponseEntity<Page<ShowProfileData>> userList(@PageableDefault(size=10, sort = {"username"}) Pageable pagination) {
-        var page = repository.findAllByActiveTrue(pagination).map(ShowProfileData::new);
+        var page = userService.userList(pagination);
         return ResponseEntity.ok(page);
     }
 
