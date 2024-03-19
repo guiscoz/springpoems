@@ -32,7 +32,7 @@ public class CommentController {
     @Autowired
     private UserValidator validator;
     
-    @GetMapping("/comments/{id}") 
+    @GetMapping("/comment/{id}") 
     public ResponseEntity getPoem(
         @PathVariable Long id
     ) {
@@ -40,7 +40,7 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @GetMapping("/poems/{id}/comments") 
+    @GetMapping("/poem/{id}/comments") 
     public ResponseEntity poemComments(
         @PathVariable Long id,  
         @PageableDefault(size=10, sort = {"lastUpdate"}) Pageable pagination
@@ -59,7 +59,7 @@ public class CommentController {
         return ResponseEntity.ok(page);
     }
 
-    @PostMapping("/poems/{id}/new_comment")
+    @PostMapping("/poem/{id}/new_comment")
     @Transactional
     public ResponseEntity create(
         @ModelAttribute @RequestBody @Valid SendCommentData data,
@@ -73,7 +73,7 @@ public class CommentController {
         return ResponseEntity.ok(data);
     }
 
-    @PutMapping("/comments/{id}")
+    @PutMapping("/comment/{id}")
     @Transactional
     public ResponseEntity update(@ModelAttribute @RequestBody @Valid SendCommentData data, @PathVariable Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -84,7 +84,7 @@ public class CommentController {
         return ResponseEntity.ok(data);
     }
 
-    @DeleteMapping("/comments/{id}")
+    @DeleteMapping("/comment/{id}")
     public ResponseEntity deleteComment(@PathVariable Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
