@@ -18,7 +18,7 @@ public record UpdateProfileData(
     @Size(max = 255, message = "Your last name can't have more than 255 characters.")
     String lastName,
 
-    @Size(max = 255, message = "Your description can't have more than 255 characters.")
+    @Size(max = 255, message = "Your description can't have more than 255 characters, make a short one.")
     String description,
     LocalDate birthday
 ) {}
