@@ -118,19 +118,22 @@ public class PoemTests {
     @Test
     public void testDeletePoem() {
         Long poemId = 1L;
-        User mockAuthor = new User();
-        Poem mockPoem = new Poem();
-        List<Comment> mockComments = List.of(new Comment(), new Comment());
+        User mockAuthor = new User(1L, "userTest", "password", "email@email.com", LocalDate.now(), null, null, null, null, null, true);
+        Poem mockPoem = new Poem(1L, "poemTitle", "poemContent", LocalDateTime.now(), LocalDateTime.now(), mockAuthor, true);
+        Comment mockComment1 = new Comment(1L, "content1", LocalDateTime.now(), LocalDateTime.now(), mockAuthor, mockPoem,true);
+        Comment mockComment2 = new Comment(2L, "content2", LocalDateTime.now(), LocalDateTime.now(), mockAuthor, mockPoem,true);
+        
+        List<Comment> mockComments = List.of(mockComment1, mockComment2);
         for (Comment comment : mockComments) {
             comment.setPoem(mockPoem);
         }
 
-        Mockito.when(poemRepository.findByIdAndAuthorAndActiveTrue(poemId, mockAuthor)).thenReturn(mockPoem);
+        Mockito.when(poemRepository.findByIdAndActiveTrue(mockPoem.getId())).thenReturn(mockPoem);
         Mockito.when(commentRepository.findAllByPoemAndActiveTrue(mockPoem)).thenReturn(mockComments);
 
         service.delete(poemId, mockAuthor);
 
-        Mockito.verify(poemRepository).findByIdAndAuthorAndActiveTrue(poemId, mockAuthor);
+        Mockito.verify(poemRepository).findByIdAndActiveTrue(poemId);
         Mockito.verify(poemRepository).save(mockPoem);
         Mockito.verify(commentRepository).findAllByPoemAndActiveTrue(mockPoem);
         Mockito.verify(commentRepository).saveAll(mockComments);
